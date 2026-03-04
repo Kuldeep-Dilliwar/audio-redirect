@@ -1,0 +1,43 @@
+name: Build and Release App
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' 
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller numpy pyaudio
+
+    - name: Build with PyInstaller
+      # Change 'main.py' to your actual script filename if different
+      run: |
+        pyinstaller --noconsole --onefile --name "win-audio-redirect" main.py
+
+    - name: Zip the Binary
+      run: |
+        Compress-Archive -Path dist/win-audio-redirect.exe -DestinationPath win-audio-redirect.zip
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: win-audio-redirect.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
